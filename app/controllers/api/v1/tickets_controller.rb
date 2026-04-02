@@ -1,9 +1,11 @@
 module Api
   module V1
     class TicketsController < ApplicationController
+      before_action :authenticate_user!
+
       # GET /api/v1/tickets
       def index
-        tickets = Ticket.page(params[:page]).per(20)
+        tickets = @current_user.tickets
 
         render json: tickets
       end
@@ -17,11 +19,14 @@ module Api
 
       # POST /api/v1/tickets
       def create
-        ticket = Ticket.create!(ticket_params.merge(user_id: 1))
+        @ticket = @current_user.tickets.new(ticket_params)
 
-        NotifySlackJob.perform_later(ticket.id)
-
-        render json: ticket, status: :created
+        if @ticket.save
+          NotifySlackJob.perform_later(@ticket.id)
+          render json: @ticket, status: :created
+        else
+          render json: @ticket.errors, status: :unprocessable_entity
+        end
       end
 
       # PATCH /api/v1/tickets/:id

@@ -4,6 +4,12 @@ class NotifySlackJob < ApplicationJob
   def perform(ticket_id)
     ticket = Ticket.find(ticket_id)
 
-    puts "New ticket created: #{ticket.title}"
+    HTTParty.post(
+      ENV["SLACK_WEBHOOK_URL"],
+      body: {
+        text: "新しいチケットが作成されました: #{ticket.title}"
+      }.to_json,
+      headers: { "Content-Type" => "application/json" }
+    )
   end
 end
